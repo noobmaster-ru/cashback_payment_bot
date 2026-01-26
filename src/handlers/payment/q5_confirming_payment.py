@@ -51,9 +51,6 @@ async def confirm_payment(
     superbanking: Superbanking
 ):
     await callback.answer()
-    telegram_id = callback.message.from_user.id
-    if not telegram_id in constants.admins_ids:
-        return
     """
     Пользователь указал, что реквизиты верные — делаем выплату
     """
