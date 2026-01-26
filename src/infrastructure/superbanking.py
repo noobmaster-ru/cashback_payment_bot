@@ -152,7 +152,7 @@ class Superbanking:
         payload = {
             "cabinetId": self.cabinet_id,
             "projectId": self.project_id,
-            "orderNumber": f"PaymentsBot-{self.pay_number}", # нужно как-то считать все выплаты
+            "orderNumber": f"CashBot-{self.pay_number}", # нужно как-то считать все выплаты
             "phone": phone, # "0079876543210"
             "bank": bank_identifier, # "SBER" = 100000000111 , "TINKOFF" = 100000000004
             "amount": amount, 
