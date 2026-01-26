@@ -16,6 +16,9 @@ async def handle_bank_name(
     message: Message, 
     state: FSMContext
 ):
+    telegram_id = message.from_user.id
+    if not telegram_id in constants.admins_ids:
+        return
     text = message.text.strip()
 
     bank_match = re.search(constants.bank_pattern, text, flags=re.IGNORECASE)

@@ -7,6 +7,7 @@ from aiogram.fsm.context import FSMContext
 from src.infrastructure.states import States
 from src.infrastructure.superbanking import Superbanking
 from src.tools.string_converter import StringConverter
+from src.core.config import constants
 
 from .router import router
 
@@ -18,7 +19,7 @@ async def no_confirm_payment(
     """
     Пользователь указал, что реквизиты неверные — начинаем ввод заново.
     """
-    await callback.answer()
+
     data = await state.get_data()
     
     # Удаленияем определенного ключа (например, 'username') из словаря Python
@@ -49,7 +50,9 @@ async def confirm_payment(
     state: FSMContext,
     superbanking: Superbanking
 ):
-    await callback.answer()
+    telegram_id = callback.message.from_user.id
+    if not telegram_id in constants.admins_ids:
+        return
     """
     Пользователь указал, что реквизиты верные — делаем выплату
     """

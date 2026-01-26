@@ -18,6 +18,8 @@ async def handle_phone_number(
     state: FSMContext
 ):
     telegram_id = message.from_user.id
+    if not telegram_id in constants.admins_ids:
+        return
     text = message.text.strip()
     # --- Поиск данных ---
     phones = re.findall(constants.phone_pattern, text)

@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 
 from src.infrastructure.states import States
 from src.tools.string_converter import StringConverter
-
+from src.core.config import constants
 
 from .router import router
 
@@ -17,7 +17,8 @@ async def cmd_start(
     state: FSMContext
 ):
     telegram_id = message.from_user.id
-
+    if not telegram_id in constants.admins_ids:
+        return
     
     username = message.from_user.username or "-"
     full_name = message.from_user.full_name or "-"
