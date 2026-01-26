@@ -1,7 +1,7 @@
 from typing import  List, Dict
 
 
-admins_ids = [1015967905,694144143,547299317]
+admins_ids = [6670414946, 694144143,547299317]
 # REGULAR EXPRESSIONS
 # 16 numbers or 4 for blocks with 4 numbers with hyphen
 card_pattern = r"\b(?:\d{16}|\d{4}(?:[ -]\d{4}){3})\b"
