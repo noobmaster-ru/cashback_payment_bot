@@ -181,7 +181,7 @@ class Superbanking:
         payload = {
             "cabinetId": self.cabinet_id,
             "projectId": self.project_id,
-            "orderNumber": f"test2-{self.pay_number}", # EsLabCashBot
+            "orderNumber": f"test3-{self.pay_number}", # EsLabCashBot
             "phone": phone, # "0079876543210"
             "bank": bank_identifier, # "SBER" = 100000000111 , "TINKOFF" = 100000000004
             "amount": amount, 
