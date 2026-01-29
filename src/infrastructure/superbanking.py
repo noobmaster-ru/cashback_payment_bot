@@ -16,7 +16,7 @@ class Superbanking:
         self.cabinet_id = settings.SUPERBANKING_CABINET_ID
         self.project_id = settings.SUPERBANKING_PROJECT_ID
         self.clearing_center_id = settings.SUPERBANKING_CLEARING_CENTER_ID
-        self.pay_number = 1
+        self.pay_number = 158
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
         
@@ -181,7 +181,7 @@ class Superbanking:
         payload = {
             "cabinetId": self.cabinet_id,
             "projectId": self.project_id,
-            "orderNumber": f"test3-{self.pay_number}", # EsLabCashBot
+            "orderNumber": f"EsLabCashBot-{self.pay_number}", # EsLabCashBot
             "phone": phone, # "0079876543210"
             "bank": bank_identifier, # "SBER" = 100000000111 , "TINKOFF" = 100000000004
             "amount": amount, 
