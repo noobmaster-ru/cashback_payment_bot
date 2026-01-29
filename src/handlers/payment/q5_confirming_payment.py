@@ -57,6 +57,22 @@ async def confirm_payment(
     """
 
     data = await state.get_data()
+    try:
+        msg_id_to_delete = data.get("msg_id_to_delete",'-')
+        msg_chat_id_to_delete = data.get("msg_chat_id_to_delete",'-')
+        await callback.bot.delete_message(
+            chat_id=msg_chat_id_to_delete, 
+            message_id=msg_id_to_delete
+        )
+    except:
+        pass
+    text = (
+        f"🧑‍💻Выполняю выплату, подождите 10 секунд"
+    )
+    await callback.message.answer(
+        text=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2"
+    )
     phone_number = data.get('phone_number', '-')
     bank = data.get('bank', '-')
     amount = data.get('amount', '-')
@@ -80,12 +96,7 @@ async def confirm_payment(
         # Получаем результаты (код подождет завершения обоих запросов здесь)
         response_status_code = future_payment.result()
         balance = future_balance.result()
-    # response_status_code = superbanking.post_create_and_sign_payment(
-    #     phone=phone_formated,
-    #     bank_identifier=bank_id,
-    #     amount=amount
-    # )
-    # balance = superbanking.post_api_balance()
+
     text = (
         f"Баланс счёта: *{balance}₽*"
     )
@@ -105,18 +116,10 @@ async def confirm_payment(
         await state.set_state(States.waiting_for_phone_number)
         return 
 
-    try:
-        msg_id_to_delete = data.get("msg_id_to_delete",'-')
-        msg_chat_id_to_delete = data.get("msg_chat_id_to_delete",'-')
-        await callback.bot.delete_message(
-            chat_id=msg_chat_id_to_delete, 
-            message_id=msg_id_to_delete
-        )
-    except:
-        pass
+
     
     text = (
-        "Выплата произведена, давайте оформим следующую.\n"
+        "Выплата произведена *успешно*, давайте оформим следующую.\n\n"
         "Напишите номер телефона\n"
     )
     await callback.message.answer(
