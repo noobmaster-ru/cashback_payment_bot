@@ -19,10 +19,8 @@ class Superbanking:
         self.pay_number = 1
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
-
         
-    def get_api_balance(self):
-
+    def post_api_balance(self):
         headers = {
             "x-token-user-api": self.api_key,
             "Content-Type": "application/json"
@@ -34,18 +32,17 @@ class Superbanking:
         } 
         try:
             response = requests.post(constants.url_api_balance, json=payload, headers=headers)
-
             response.raise_for_status()            
             resp_json = response.json()
             balance = resp_json["data"]["balance"]
-            logger.info(f"balance = {balance}")
+            logger.info(f"balance = {balance}₽")
             return balance
         except requests.exceptions.HTTPError as http_err:
-            logger.info("HTTP ошибка, balance: %s", http_err)
-            logger.info("Тело ошибки, balance: %s", response.text)
+            logger.error("HTTP error, balance: %s", http_err)
+            logger.error("body error, balance: %s", response.text)
             return -1
         except Exception as err:
-            logger.info("Произошла ошибка, balance: %s", err)   
+            logger.error("error, balance: %s", err)   
             return -1
     
     # Дополнительные короткие АЛИАСЫ, которыми обычно пишут пользователи.
@@ -146,7 +143,6 @@ class Superbanking:
         Superbanking._add_alias(self, alias="газпромбанк", by_eng="TOCHKA BANK")
         Superbanking._add_alias(self, alias="псб", by_eng="TOCHKA BANK")
 
-
     def parse_bank_identifier(self, text: str) -> Optional[str]:
         """
         Пытается определить identifier банка по произвольному тексту пользователя.
@@ -170,13 +166,12 @@ class Superbanking:
 
         return None
     
-    def create_payment(
+    def post_create_and_sign_payment(
         self,
         phone: str,
-        bank_identifier: str,  # <- сразу identifier
+        bank_identifier: str,  
         amount: int
     ) -> int:
-        # url = "https://api.superbanking.ru/cabinet/payout/create?v=1.0.0"
         uid_token = str(uuid.uuid4())
         headers = {
             "x-token-user-api": self.api_key,
@@ -186,7 +181,7 @@ class Superbanking:
         payload = {
             "cabinetId": self.cabinet_id,
             "projectId": self.project_id,
-            "orderNumber": f"test-{self.pay_number}", # нужно как-то считать все выплаты EsLabCashBot
+            "orderNumber": f"test2-{self.pay_number}", # EsLabCashBot
             "phone": phone, # "0079876543210"
             "bank": bank_identifier, # "SBER" = 100000000111 , "TINKOFF" = 100000000004
             "amount": amount, 
@@ -196,7 +191,6 @@ class Superbanking:
         self.pay_number += 1
         try:
             response = requests.post(constants.url_create, json=payload, headers=headers)
-
             response.raise_for_status()            
             resp_json = response.json()
             payment_id = resp_json["data"]["payout"]["id"]
@@ -214,13 +208,13 @@ class Superbanking:
                 response.raise_for_status()
                 return response.status_code
             except requests.exceptions.HTTPError as http_err:
-                logging.info("HTTP ошибка, sign: %s", http_err)
-                logging.info("Тело ошибки, sign: %s", response.text)
+                logger.error("HTTP error, sign: %s", http_err)
+                logger.error("error.text, sign: %s", response.text)
             except Exception as err:
-                logging.info("Произошла ошибка, sign: %s", err)
+                logger.error("Произошла ошибка, sign: %s", err)
         except requests.exceptions.HTTPError as http_err:
-            logging.info("HTTP ошибка, create: %s", http_err)
-            logging.info("Тело ошибки, create: %s", response.text)
+            logger.error("HTTP error, create: %s", http_err)
+            logger.error("error.text, create: %s", response.text)
         except Exception as err:
-            logging.info("Произошла ошибка, create: %s", err)   
+            logger.error(err)   
         return response.status_code

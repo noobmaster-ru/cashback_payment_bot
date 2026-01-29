@@ -3,6 +3,7 @@ from aiogram.types import CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 
+from concurrent.futures import ThreadPoolExecutor
 
 from src.infrastructure.states import States
 from src.infrastructure.superbanking import Superbanking
@@ -65,14 +66,28 @@ async def confirm_payment(
     phone_formated = StringConverter.convert_phone_to_superbanking_format(phone_number=phone_number)
     bank_id = superbanking.parse_bank_identifier(text=bank)
     
-    response_status_code = superbanking.create_payment(
-        phone=phone_formated,
-        bank_identifier=bank_id,
-        amount=amount
-    )
-    balance = superbanking.get_api_balance()
+    # Создаем пул потоков (2 потока для двух задач)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        # Отправляем задачи на выполнение
+        future_payment = executor.submit(
+            superbanking.post_create_and_sign_payment, 
+            phone=phone_formated, 
+            bank_identifier=bank_id, 
+            amount=amount
+        )
+        future_balance = executor.submit(superbanking.post_api_balance)
+
+        # Получаем результаты (код подождет завершения обоих запросов здесь)
+        response_status_code = future_payment.result()
+        balance = future_balance.result()
+    # response_status_code = superbanking.post_create_and_sign_payment(
+    #     phone=phone_formated,
+    #     bank_identifier=bank_id,
+    #     amount=amount
+    # )
+    # balance = superbanking.post_api_balance()
     text = (
-        f"Баланс счёта: {balance}"
+        f"Баланс счёта: *{balance}₽*"
     )
     await callback.message.answer(
         text=StringConverter.escape_markdown_v2(text),
@@ -89,7 +104,7 @@ async def confirm_payment(
         )
         await state.set_state(States.waiting_for_phone_number)
         return 
-    
+
     try:
         msg_id_to_delete = data.get("msg_id_to_delete",'-')
         msg_chat_id_to_delete = data.get("msg_chat_id_to_delete",'-')
