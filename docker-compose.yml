@@ -1,8 +1,8 @@
 # prod: cashback_bot
 services:
-  cashback_bot:
+  bot_pay:
     build: .
-    container_name: cashback_bot
+    container_name: bot_pay
     command: ["/app/.venv/bin/python", "run.py"]
     env_file:
       - .env        
