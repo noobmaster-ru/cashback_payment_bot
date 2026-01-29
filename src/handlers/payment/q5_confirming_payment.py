@@ -64,15 +64,24 @@ async def confirm_payment(
     amount = StringConverter.parse_amount(text=str(amount)) 
     phone_formated = StringConverter.convert_phone_to_superbanking_format(phone_number=phone_number)
     bank_id = superbanking.parse_bank_identifier(text=bank)
+    
     response_status_code = superbanking.create_payment(
         phone=phone_formated,
         bank_identifier=bank_id,
         amount=amount
     )
-
+    balance = superbanking.get_api_balance()
+    text = (
+        f"Баланс счёта: {balance}"
+    )
+    await callback.message.answer(
+        text=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2"
+    )
+    
     if response_status_code != 200:
         text = (
-            f"У нас возникли некоторые проблемы при выплате , можете , пожалуйста , заново ввести номер телефона/карты"
+            f"У нас возникли некоторые проблемы при выплате , можете , пожалуйста , заново ввести номер телефона"
         )
         await callback.message.answer(
             text=StringConverter.escape_markdown_v2(text),

@@ -19,6 +19,9 @@ logging.basicConfig(
         logging.StreamHandler(),  # выводим в консоль
     ],
 )
+
+logger = logging.getLogger(__name__)
+
 async def main():
     # Один Redis-клиент, одна DB (например /0)
     redis_client = await asyncredis.from_url(settings.REDIS_URL)

@@ -5,6 +5,10 @@ from src.core.config import settings, constants
 from src.tools.string_converter import StringConverter
 from typing import Optional, Dict
 
+from src.core.config import constants
+
+logger = logging.getLogger(__name__)
+
 
 class Superbanking:
     def __init__(self):
@@ -15,7 +19,35 @@ class Superbanking:
         self.pay_number = 1
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
-  
+
+        
+    def get_api_balance(self):
+
+        headers = {
+            "x-token-user-api": self.api_key,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "cabinetId": self.cabinet_id,
+            "projectId": self.project_id,
+            "clearingCenterId": self.clearing_center_id
+        } 
+        try:
+            response = requests.post(constants.url_api_balance, json=payload, headers=headers)
+
+            response.raise_for_status()            
+            resp_json = response.json()
+            balance = resp_json["data"]["balance"]
+            logger.info(f"balance = {balance}")
+            return balance
+        except requests.exceptions.HTTPError as http_err:
+            logger.info("HTTP ошибка, balance: %s", http_err)
+            logger.info("Тело ошибки, balance: %s", response.text)
+            return -1
+        except Exception as err:
+            logger.info("Произошла ошибка, balance: %s", err)   
+            return -1
+    
     # Дополнительные короткие АЛИАСЫ, которыми обычно пишут пользователи.
     # Здесь мы биндим алиас → identifier, используя SUPERBANKING_BANKS.
     def _find_by_rus_contains(self, substr: str) -> Optional[str]:
@@ -69,23 +101,25 @@ class Superbanking:
         Superbanking._add_alias(self, alias="т- банк", by_eng="TINKOFF")
         Superbanking._add_alias(self, alias="т -банк", by_eng="TINKOFF")
         
-        Superbanking._add_alias(self, alias="альфа", by_rus="Альфа Банк")
-        Superbanking._add_alias(self, alias="альфабанк", by_rus="Альфа Банк")
-        Superbanking._add_alias(self, alias="альфа-банк", by_rus="Альфа Банк")
+        Superbanking._add_alias(self, alias="Альфа", by_rus="Альфа Банк")
+        Superbanking._add_alias(self, alias="Альфабанк", by_rus="Альфа Банк")
+        Superbanking._add_alias(self, alias="Альфа-банк", by_rus="Альфа Банк")
 
-        Superbanking._add_alias(self, alias="втб", by_rus="ВТБ")
+        Superbanking._add_alias(self, alias="Втб", by_rus="ВТБ")
 
-        Superbanking._add_alias(self, alias="озон", by_eng="OZON")
+        Superbanking._add_alias(self, alias="Озон", by_eng="OZON")
         Superbanking._add_alias(self, alias="ozon", by_eng="OZON")
 
-        Superbanking._add_alias(self, alias="райфайзен", by_rus="Райффайзенбанк")
-        Superbanking._add_alias(self, alias="райф", by_rus="Райффайзенбанк")
-        Superbanking._add_alias(self, alias="райфф", by_rus="Райффайзенбанк")
-        Superbanking._add_alias(self, alias="райффайзен", by_rus="Райффайзенбанк")
+        Superbanking._add_alias(self, alias="Райфайзен", by_rus="Райффайзенбанк")
+        Superbanking._add_alias(self, alias="Райф", by_rus="Райффайзенбанк")
+        Superbanking._add_alias(self, alias="Райфф", by_rus="Райффайзенбанк")
+        Superbanking._add_alias(self, alias="Райффайзен", by_rus="Райффайзенбанк")
 
         Superbanking._add_alias(self, alias="росбанк", by_rus="Росбанк")
         Superbanking._add_alias(self, alias="открытие", by_rus="Открытие")
         Superbanking._add_alias(self, alias="почтабанк", by_rus="Почта Банк")
+        Superbanking._add_alias(self, alias="почта банк", by_rus="Почта Банк")
+        Superbanking._add_alias(self, alias="почта банк", by_rus="Почта Банк")
         Superbanking._add_alias(self, alias="совкомбанк", by_rus="Совкомбанк")
         Superbanking._add_alias(self, alias="мтс банк", by_rus="МТС-Банк")
         Superbanking._add_alias(self, alias="мтсбанк", by_rus="МТС-Банк")
@@ -100,6 +134,7 @@ class Superbanking:
         Superbanking._add_alias(self, alias="юmoney", by_eng="YOOMONEY")
 
         Superbanking._add_alias(self, alias="вббанк", by_eng="Wildberries Bank")
+        Superbanking._add_alias(self, alias="вб банк", by_eng="Wildberries Bank")
         Superbanking._add_alias(self, alias="вб-банк", by_eng="Wildberries Bank")
         Superbanking._add_alias(self, alias="wbбанк", by_eng="Wildberries Bank")
         Superbanking._add_alias(self, alias="wildberries", by_eng="Wildberries Bank")
@@ -141,18 +176,17 @@ class Superbanking:
         bank_identifier: str,  # <- сразу identifier
         amount: int
     ) -> int:
-        url = "https://api.superbanking.ru/cabinet/payout/create?v=1.0.0"
+        # url = "https://api.superbanking.ru/cabinet/payout/create?v=1.0.0"
         uid_token = str(uuid.uuid4())
         headers = {
             "x-token-user-api": self.api_key,
             "x-idempotency-token": uid_token, # Генерация уникального ключа идемпотентности
             "Content-Type": "application/json"
-            
         }
         payload = {
             "cabinetId": self.cabinet_id,
             "projectId": self.project_id,
-            "orderNumber": f"EsLabCashBot-{self.pay_number}", # нужно как-то считать все выплаты
+            "orderNumber": f"test-{self.pay_number}", # нужно как-то считать все выплаты EsLabCashBot
             "phone": phone, # "0079876543210"
             "bank": bank_identifier, # "SBER" = 100000000111 , "TINKOFF" = 100000000004
             "amount": amount, 
@@ -161,30 +195,29 @@ class Superbanking:
         }
         self.pay_number += 1
         try:
-            response = requests.post(url, json=payload, headers=headers)
+            response = requests.post(constants.url_create, json=payload, headers=headers)
 
             response.raise_for_status()            
-            if response.status_code == 200:
-                resp_json = response.json()
-                payment_id = resp_json["data"]["payout"]["id"]
-                url = "https://api.superbanking.ru/cabinet/payout/sign?v=1.0.1"
-                headers = {
-                    "x-token-user-api": self.api_key,
-                    "x-idempotency-token": uid_token, # Генерация уникального ключа идемпотентности
-                    "Content-Type": "application/json"
-                }
-                payload = {
-                    "cabinetId": self.cabinet_id,
-                    "cabinetTransactionId": payment_id,
-                }
-                try:
-                    response = requests.post(url, json=payload, headers=headers)
-                    response.raise_for_status()
-                except requests.exceptions.HTTPError as http_err:
-                    logging.info("HTTP ошибка, sign: %s", http_err)
-                    logging.info("Тело ошибки, sign: %s", response.text)
-                except Exception as err:
-                    logging.info("Произошла ошибка, sign: %s", err)
+            resp_json = response.json()
+            payment_id = resp_json["data"]["payout"]["id"]
+            headers = {
+                "x-token-user-api": self.api_key,
+                "x-idempotency-token": uid_token, # Генерация уникального ключа идемпотентности
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "cabinetId": self.cabinet_id,
+                "cabinetTransactionId": payment_id,
+            }
+            try:
+                response = requests.post(constants.url_sign, json=payload, headers=headers)
+                response.raise_for_status()
+                return response.status_code
+            except requests.exceptions.HTTPError as http_err:
+                logging.info("HTTP ошибка, sign: %s", http_err)
+                logging.info("Тело ошибки, sign: %s", response.text)
+            except Exception as err:
+                logging.info("Произошла ошибка, sign: %s", err)
         except requests.exceptions.HTTPError as http_err:
             logging.info("HTTP ошибка, create: %s", http_err)
             logging.info("Тело ошибки, create: %s", response.text)
