@@ -2,7 +2,7 @@ from aiogram import F
 from aiogram.types import CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from src.infrastructure.states import States
@@ -117,6 +117,7 @@ async def confirm_payment(
         return 
 
 
+    time.sleep(5)
     check_photo_url = superbanking.post_confirm_operation(
         order_number=response_payment_status_code_and_order_number_tuple[1]
     )
