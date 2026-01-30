@@ -16,7 +16,7 @@ class Superbanking:
         self.cabinet_id = settings.SUPERBANKING_CABINET_ID
         self.project_id = settings.SUPERBANKING_PROJECT_ID
         self.clearing_center_id = settings.SUPERBANKING_CLEARING_CENTER_ID
-        self.pay_number = 158
+        self.pay_number = 204
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
         
@@ -138,9 +138,13 @@ class Superbanking:
         Superbanking._add_alias(self, alias="вб", by_eng="Wildberries Bank")
         Superbanking._add_alias(self, alias="wb", by_eng="Wildberries Bank")
 
+        Superbanking._add_alias(self, alias="газпромбанк", by_eng="Газпромбанк")
+        Superbanking._add_alias(self, alias="газпром", by_eng="Газпромбанк")
+        Superbanking._add_alias(self, alias="газпром банк", by_eng="Газпромбанк")
+        Superbanking._add_alias(self, alias="газпром Банк", by_eng="Газпромбанк")
+        
         Superbanking._add_alias(self, alias="толчка", by_eng="TOCHKA BANK")  # если будут писать странно – добавишь свои варианты
         Superbanking._add_alias(self, alias="точка", by_eng="TOCHKA BANK")
-        Superbanking._add_alias(self, alias="газпромбанк", by_eng="TOCHKA BANK")
         Superbanking._add_alias(self, alias="псб", by_eng="TOCHKA BANK")
 
     def parse_bank_identifier(self, text: str) -> Optional[str]:
