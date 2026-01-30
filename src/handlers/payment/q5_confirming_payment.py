@@ -121,7 +121,7 @@ async def confirm_payment(
         order_number=response_payment_status_code_and_order_number_tuple[1]
     )
     text = (
-        f"Выплата произведена *успешно*, чек по операции: {check_photo_url}\n"
+        f"Выплата произведена *успешно*, чек по операции {response_payment_status_code_and_order_number_tuple[1]}: {check_photo_url}\n"
         "Давайте оформим следующую.\n\n"
         "Напишите номер телефона"
     )
