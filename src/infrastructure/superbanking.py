@@ -145,7 +145,8 @@ class Superbanking:
         
         Superbanking._add_alias(self, alias="толчка", by_eng="TOCHKA BANK")  # если будут писать странно – добавишь свои варианты
         Superbanking._add_alias(self, alias="точка", by_eng="TOCHKA BANK")
-        Superbanking._add_alias(self, alias="псб", by_eng="TOCHKA BANK")
+        
+        Superbanking._add_alias(self, alias="псб", by_eng="Промсвязьбанк")
 
     def parse_bank_identifier(self, text: str) -> Optional[str]:
         """
