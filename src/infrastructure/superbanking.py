@@ -234,7 +234,6 @@ class Superbanking:
         }
         payload = {
             "cabinetId": self.cabinet_id,
-            "projectId": self.project_id,
             "orderNumber": order_number, # EsLabCashBot
         }
         try:
