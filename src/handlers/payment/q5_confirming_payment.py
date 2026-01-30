@@ -94,7 +94,7 @@ async def confirm_payment(
         future_balance = executor.submit(superbanking.post_api_balance)
 
         # Получаем результаты (код подождет завершения обоих запросов здесь)
-        response_status_code = future_payment.result()
+        response_payment_status_code_and_order_number_tuple = future_payment.result()
         balance = future_balance.result()
 
     text = (
@@ -105,7 +105,7 @@ async def confirm_payment(
         parse_mode="MarkdownV2"
     )
     
-    if response_status_code != 200:
+    if response_payment_status_code_and_order_number_tuple[0] != 200:
         text = (
             f"У нас возникли некоторые проблемы при выплате , можете , пожалуйста , заново ввести номер телефона"
         )
@@ -117,10 +117,13 @@ async def confirm_payment(
         return 
 
 
-    
+    check_photo_url = superbanking.post_confirm_operation(
+        order_number=response_payment_status_code_and_order_number_tuple[1]
+    )
     text = (
-        "Выплата произведена *успешно*, давайте оформим следующую.\n\n"
-        "Напишите номер телефона\n"
+        f"Выплата произведена *успешно*, чек по операции: {check_photo_url}"
+        "Давайте оформим следующую.\n\n"
+        "Напишите номер телефона"
     )
     await callback.message.answer(
         text=StringConverter.escape_markdown_v2(text),

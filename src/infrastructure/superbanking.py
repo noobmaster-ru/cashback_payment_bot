@@ -3,7 +3,7 @@ import logging
 import requests
 from src.core.config import settings, constants
 from src.tools.string_converter import StringConverter
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 
 from src.core.config import constants
 
@@ -19,8 +19,9 @@ class Superbanking:
         self.pay_number = 204
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
+        self.order_number = None
         
-    def post_api_balance(self):
+    def post_api_balance(self) -> Tuple[int]:
         headers = {
             "x-token-user-api": self.api_key,
             "Content-Type": "application/json"
@@ -176,17 +177,19 @@ class Superbanking:
         phone: str,
         bank_identifier: str,  
         amount: int
-    ) -> int:
+    ) -> Tuple[int, str]:
         uid_token = str(uuid.uuid4())
         headers = {
             "x-token-user-api": self.api_key,
             "x-idempotency-token": uid_token, # Генерация уникального ключа идемпотентности
             "Content-Type": "application/json"
         }
+        order_number =f"{constants.order_number_hash}-{self.pay_number}"
+        self.order_number = order_number
         payload = {
             "cabinetId": self.cabinet_id,
             "projectId": self.project_id,
-            "orderNumber": f"EsLabCashBot-{self.pay_number}", # EsLabCashBot
+            "orderNumber": order_number, 
             "phone": phone, # "0079876543210"
             "bank": bank_identifier, # "SBER" = 100000000111 , "TINKOFF" = 100000000004
             "amount": amount, 
@@ -211,7 +214,7 @@ class Superbanking:
             try:
                 response = requests.post(constants.url_sign, json=payload, headers=headers)
                 response.raise_for_status()
-                return response.status_code
+                return response.status_code, order_number
             except requests.exceptions.HTTPError as http_err:
                 logger.error("HTTP error, sign: %s", http_err)
                 logger.error("error.text, sign: %s", response.text)
@@ -222,4 +225,27 @@ class Superbanking:
             logger.error("error.text, create: %s", response.text)
         except Exception as err:
             logger.error(err)   
-        return response.status_code
+        return response.status_code, order_number
+
+    def post_confirm_operation(self, order_number: str):
+        headers = {
+            "x-token-user-api": self.api_key,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "cabinetId": self.cabinet_id,
+            "projectId": self.project_id,
+            "orderNumber": order_number, # EsLabCashBot
+        }
+        try:
+            response = requests.post(constants.url_confirm_operation, json=payload, headers=headers)
+            response.raise_for_status()            
+            resp_json = response.json()
+            check_photo_url = resp_json["data"]["url"]
+            return response.status_code, check_photo_url
+        except requests.exceptions.HTTPError as http_err:
+            logger.error("HTTP error, confirm_payment: %s", http_err)
+            logger.error("error.text, confirm_payment: %s", response.text)
+        except Exception as err:
+            logger.error(err)   
+        return response.status_code, "none"

@@ -5,7 +5,9 @@ admins_ids = [6670414946, 694144143,547299317]
 url_create="https://api.superbanking.ru/cabinet/payout/create?v=1.0.0"
 url_sign="https://api.superbanking.ru/cabinet/payout/sign?v=1.0.1"
 url_api_balance="https://api.superbanking.ru/cabinet/clearingCenter/getApiBalance?v=1.0.0"
+url_confirm_operation="https://api.superbanking.ru/cabinet/confirmOperation/createOne?v=1.0.0"
 
+order_number_hash="TESTt"
 # REGULAR EXPRESSIONS
 # 16 numbers or 4 for blocks with 4 numbers with hyphen
 card_pattern = r"\b(?:\d{16}|\d{4}(?:[ -]\d{4}){3})\b"
