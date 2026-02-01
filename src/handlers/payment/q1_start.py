@@ -1,16 +1,30 @@
 import logging
 from aiogram import Bot
 from aiogram.types import Message
-from aiogram.filters import StateFilter
+from aiogram.filters import StateFilter, Command
 from aiogram.fsm.context import FSMContext
 
 from src.infrastructure.states import States
 from src.tools.string_converter import StringConverter
 from src.core.config import constants
+from src.infrastructure.superbanking import Superbanking
 
 from .router import router
 
-
+@router.message(Command("balance"))
+async def get_balance(
+    message: Message,
+    superbanking: Superbanking
+):
+    balance = superbanking.post_api_balance
+    text = (
+        f"Баланс счёта: *{balance}₽*"
+    )
+    await message.answer(
+        text=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2"
+    )
+    
 @router.message(StateFilter(None))
 async def cmd_start(
     message: Message,
