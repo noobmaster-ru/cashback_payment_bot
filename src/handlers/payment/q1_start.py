@@ -16,7 +16,7 @@ async def get_balance(
     message: Message,
     superbanking: Superbanking
 ):
-    balance = superbanking.post_api_balance
+    balance = superbanking.post_api_balance()
     text = (
         f"Баланс счёта: *{balance}₽*"
     )
