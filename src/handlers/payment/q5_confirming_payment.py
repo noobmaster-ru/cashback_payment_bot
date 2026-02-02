@@ -1,8 +1,9 @@
+import time
+import logging
 from aiogram import F
 from aiogram.types import CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-import time
 from concurrent.futures import ThreadPoolExecutor
 
 from src.infrastructure.states import States
@@ -11,6 +12,8 @@ from src.tools.string_converter import StringConverter
 from src.core.config import constants
 
 from .router import router
+
+logger = logging.getLogger(__name__)
 
 @router.callback_query(StateFilter(States.confirming_requisites), F.data == "no_confirm_payment")
 async def no_confirm_payment(
@@ -37,7 +40,7 @@ async def no_confirm_payment(
     # ставим новое состояние
     text = (
         "❌ Хорошо, давайте попробуем ещё раз(по порядку запишем всё заново)\n"
-        "Отправьте номер телефона/карты "
+        "Отправьте номер телефона"
     )
     await callback.message.edit_text(
        text=StringConverter.escape_markdown_v2(text),
@@ -116,13 +119,8 @@ async def confirm_payment(
         await state.set_state(States.waiting_for_phone_number)
         return 
 
-
-    time.sleep(5)
-    check_photo_url = superbanking.post_confirm_operation(
-        order_number=response_payment_status_code_and_order_number_tuple[1]
-    )
     text = (
-        f"Выплата произведена *успешно*, чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*: {check_photo_url}\n"
+        f"Выплата *{response_payment_status_code_and_order_number_tuple[1]}* произведена успешно"
         "Давайте оформим следующую.\n\n"
         "Напишите номер телефона"
     )
@@ -132,3 +130,19 @@ async def confirm_payment(
     )
 
     await state.set_state(States.waiting_for_phone_number)
+    
+    
+    time.sleep(constants.TIME_SLEEP)
+    logger.info(f"orderNumber = {response_payment_status_code_and_order_number_tuple[1]}")
+    check_photo_url = superbanking.post_confirm_operation(
+        order_number=response_payment_status_code_and_order_number_tuple[1]
+    )
+    text = (
+        f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*: {check_photo_url}\n"
+        "Давайте оформим следующую.\n\n"
+        "Напишите номер телефона"
+    )
+    await callback.message.answer(
+        text=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2"
+    )
