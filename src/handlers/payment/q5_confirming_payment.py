@@ -1,7 +1,7 @@
 import time
 import logging
 from aiogram import F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, URLInputFile
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from concurrent.futures import ThreadPoolExecutor
@@ -120,11 +120,11 @@ async def confirm_payment(
         return 
 
     text = (
-        f"Выплата *{response_payment_status_code_and_order_number_tuple[1]}* произведена успешно"
+        f"Выплата *{response_payment_status_code_and_order_number_tuple[1]}* произведена успешно\n"
         "Давайте оформим следующую.\n\n"
         "Напишите номер телефона"
     )
-    await callback.message.answer(
+    msg = await callback.message.answer(
         text=StringConverter.escape_markdown_v2(text),
         parse_mode="MarkdownV2"
     )
@@ -138,11 +138,18 @@ async def confirm_payment(
         order_number=response_payment_status_code_and_order_number_tuple[1]
     )
     text = (
-        f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*: {check_photo_url}\n"
-        "Давайте оформим следующую.\n\n"
-        "Напишите номер телефона"
+        f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*: {check_photo_url[1]}\n"
     )
-    await callback.message.answer(
+    await msg.reply(
         text=StringConverter.escape_markdown_v2(text),
         parse_mode="MarkdownV2"
+    )
+    
+    document = URLInputFile(
+        check_photo_url[1], 
+        filename="чек.pdf"  # Важно указать имя с .pdf
+    )
+    await callback.message.answer_document(
+        document=document,
+        caption=f"{response_payment_status_code_and_order_number_tuple[1]}"
     )
