@@ -1,5 +1,6 @@
 import time
 import logging
+import asyncio
 from aiogram import F
 from aiogram.types import CallbackQuery, URLInputFile
 from aiogram.filters import StateFilter
@@ -132,24 +133,23 @@ async def confirm_payment(
     await state.set_state(States.waiting_for_phone_number)
     
     
-    time.sleep(constants.TIME_SLEEP)
+    await asyncio.sleep(constants.TIME_SLEEP)
+    
     logger.info(f"orderNumber = {response_payment_status_code_and_order_number_tuple[1]}")
+    
     check_photo_url = superbanking.post_confirm_operation(
         order_number=response_payment_status_code_and_order_number_tuple[1]
     )
     text = (
         f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*: {check_photo_url[1]}\n"
     )
-    await msg.reply(
-        text=StringConverter.escape_markdown_v2(text),
-        parse_mode="MarkdownV2"
-    )
     
     document = URLInputFile(
         check_photo_url[1], 
         filename="чек.pdf"  # Важно указать имя с .pdf
     )
-    await callback.message.answer_document(
+    await msg.reply_document(
         document=document,
-        caption=f"{response_payment_status_code_and_order_number_tuple[1]}"
+        caption=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2"
     )
