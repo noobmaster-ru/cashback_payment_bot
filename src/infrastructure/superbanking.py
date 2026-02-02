@@ -16,7 +16,7 @@ class Superbanking:
         self.cabinet_id = settings.SUPERBANKING_CABINET_ID
         self.project_id = settings.SUPERBANKING_PROJECT_ID
         self.clearing_center_id = settings.SUPERBANKING_CLEARING_CENTER_ID
-        self.pay_number = 349
+        self.pay_number = constants.pay_number
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
         self.order_number = None

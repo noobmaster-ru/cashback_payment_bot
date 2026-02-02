@@ -1,6 +1,7 @@
 from typing import  List, Dict
 
 TIME_SLEEP = 10
+pay_number = 350
 admins_ids = [6670414946, 694144143,547299317]
 url_create="https://api.superbanking.ru/cabinet/payout/create?v=1.0.0"
 url_sign="https://api.superbanking.ru/cabinet/payout/sign?v=1.0.1"
