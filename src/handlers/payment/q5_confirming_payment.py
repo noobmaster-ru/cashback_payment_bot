@@ -153,7 +153,7 @@ async def confirm_payment(
     # Создаем объект файла из ссылки
     pdf_file = URLInputFile(
         check_photo_url[1],
-        filename="чек.pdf"  # Укажите имя, с которым файл отобразится у юзера
+        filename="Чек.pdf"  # Укажите имя, с которым файл отобразится у юзера
     )
     text = (
         f"Чек *{response_payment_status_code_and_order_number_tuple[1]}*"
