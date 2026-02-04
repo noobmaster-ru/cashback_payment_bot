@@ -121,8 +121,8 @@ async def confirm_payment(
         return 
 
     text = (
-        f"Выплата *{response_payment_status_code_and_order_number_tuple[1]}*:\nТелефон: {phone_number}\nБанк: {bank}\nСумма: {amount}\nпроизведена *успешно*\n"
-        "Давайте оформим следующую.\n\n"
+        f"Выплата *{response_payment_status_code_and_order_number_tuple[1]}*:\n\nТелефон: {phone_number}\nБанк: {bank}\nСумма: {amount}\n\n"
+        "произведена *успешно* давайте оформим следующую.\n\n"
         "Напишите номер телефона"
     )
     msg = await callback.message.answer(
@@ -140,15 +140,15 @@ async def confirm_payment(
     check_photo_url = superbanking.post_confirm_operation(
         order_number=response_payment_status_code_and_order_number_tuple[1]
     )
-    text = (
-        f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*:\n {check_photo_url[1]}\n"
-    )
+    # text = (
+    #     f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*:\n {check_photo_url[1]}\n"
+    # )
     
-    await callback.message.answer(
-        text=StringConverter.escape_markdown_v2(text),
-        parse_mode="MarkdownV2",
-        reply_to_message_id=msg.message_id
-    )
+    # await callback.message.answer(
+    #     text=StringConverter.escape_markdown_v2(text),
+    #     parse_mode="MarkdownV2",
+    #     reply_to_message_id=msg.message_id
+    # )
     
     # Создаем объект файла из ссылки
     pdf_file = URLInputFile(
@@ -162,5 +162,6 @@ async def confirm_payment(
     await callback.message.answer_document(
         document=pdf_file,
         caption=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2",
         reply_to_message_id=msg.message_id # Если нужно ответить на текущее сообщение
     )
