@@ -132,7 +132,7 @@ async def confirm_payment(
 
     await state.set_state(States.waiting_for_phone_number)
     
-    
+
     await asyncio.sleep(constants.TIME_SLEEP)
     
     logger.info(f"orderNumber = {response_payment_status_code_and_order_number_tuple[1]}")
@@ -144,12 +144,8 @@ async def confirm_payment(
         f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*: {check_photo_url[1]}\n"
     )
     
-    document = URLInputFile(
-        check_photo_url[1], 
-        filename="чек.pdf"  # Важно указать имя с .pdf
-    )
-    await msg.reply_document(
-        document=document,
-        caption=StringConverter.escape_markdown_v2(text),
-        parse_mode="MarkdownV2"
+    await callback.message.answer(
+        text=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2",
+        reply_to_message_id=msg.message_id
     )
