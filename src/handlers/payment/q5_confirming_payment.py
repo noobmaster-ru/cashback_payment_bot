@@ -121,7 +121,7 @@ async def confirm_payment(
         return 
 
     text = (
-        f"Выплата *{response_payment_status_code_and_order_number_tuple[1]}* произведена успешно\n"
+        f"Выплата *{response_payment_status_code_and_order_number_tuple[1]}*:\nТелефон: {phone_number}\nБанк: {bank}\nСумма: {amount}\nпроизведена *успешно*\n"
         "Давайте оформим следующую.\n\n"
         "Напишите номер телефона"
     )
@@ -141,11 +141,26 @@ async def confirm_payment(
         order_number=response_payment_status_code_and_order_number_tuple[1]
     )
     text = (
-        f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*: {check_photo_url[1]}\n"
+        f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*:\n {check_photo_url[1]}\n"
     )
     
     await callback.message.answer(
         text=StringConverter.escape_markdown_v2(text),
         parse_mode="MarkdownV2",
         reply_to_message_id=msg.message_id
+    )
+    
+    # Создаем объект файла из ссылки
+    pdf_file = URLInputFile(
+        check_photo_url[1],
+        filename="чек.pdf"  # Укажите имя, с которым файл отобразится у юзера
+    )
+    text = (
+        f"Чек *{response_payment_status_code_and_order_number_tuple[1]}*"
+    )
+    # Отправляем документ
+    await callback.message.answer_document(
+        document=pdf_file,
+        caption=StringConverter.escape_markdown_v2(text),
+        reply_to_message_id=msg.message_id # Если нужно ответить на текущее сообщение
     )
