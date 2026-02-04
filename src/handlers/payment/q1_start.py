@@ -32,6 +32,13 @@ async def cmd_start(
 ):
     telegram_id = message.from_user.id
     if not telegram_id in constants.admins_ids:
+        text = (
+            "Пока"
+        )
+        await message.answer(
+            text=StringConverter.escape_markdown_v2(text),
+            parse_mode="MarkdownV2"
+        )
         return
     
     username = message.from_user.username or "-"
