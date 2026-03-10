@@ -1,11 +1,11 @@
-import time
 import logging
 import asyncio
+
 from aiogram import F
 from aiogram.types import CallbackQuery, URLInputFile
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from concurrent.futures import ThreadPoolExecutor
+from redis.asyncio import Redis
 
 from src.infrastructure.states import States
 from src.infrastructure.superbanking import Superbanking
@@ -53,7 +53,8 @@ async def no_confirm_payment(
 async def confirm_payment(
     callback: CallbackQuery, 
     state: FSMContext,
-    superbanking: Superbanking
+    superbanking: Superbanking,
+    redis_client: Redis,
 ):
     await callback.answer()
     """
@@ -68,7 +69,7 @@ async def confirm_payment(
             chat_id=msg_chat_id_to_delete, 
             message_id=msg_id_to_delete
         )
-    except:
+    except Exception:
         pass
     text = (
         f"🧑‍💻Выполняю выплату, подождите 10 секунд"
@@ -85,21 +86,16 @@ async def confirm_payment(
     amount = StringConverter.parse_amount(text=str(amount)) 
     phone_formated = StringConverter.convert_phone_to_superbanking_format(phone_number=phone_number)
     bank_id = superbanking.parse_bank_identifier(text=bank)
-    
-    # Создаем пул потоков (2 потока для двух задач)
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        # Отправляем задачи на выполнение
-        future_payment = executor.submit(
-            superbanking.post_create_and_sign_payment, 
-            phone=phone_formated, 
-            bank_identifier=bank_id, 
-            amount=amount
+    if bank_id is None:
+        text = "Не удалось определить банк, введите реквизиты заново."
+        await callback.message.answer(
+            text=StringConverter.escape_markdown_v2(text),
+            parse_mode="MarkdownV2"
         )
-        future_balance = executor.submit(superbanking.post_api_balance)
+        await state.set_state(States.waiting_for_phone_number)
+        return
 
-        # Получаем результаты (код подождет завершения обоих запросов здесь)
-        response_payment_status_code_and_order_number_tuple = future_payment.result()
-        balance = future_balance.result()
+    balance = await asyncio.to_thread(superbanking.post_api_balance)
 
     text = (
         f"Баланс счёта: *{balance}₽*"
@@ -108,8 +104,41 @@ async def confirm_payment(
         text=StringConverter.escape_markdown_v2(text),
         parse_mode="MarkdownV2"
     )
+
+    if balance < 0:
+        text = (
+            "Не удалось проверить баланс счёта, выплата остановлена. "
+            "Повторите попытку через несколько секунд."
+        )
+        await callback.message.answer(
+            text=StringConverter.escape_markdown_v2(text),
+            parse_mode="MarkdownV2"
+        )
+        await state.set_state(States.waiting_for_phone_number)
+        return
+
+    if balance < constants.BALANCE_LIMIT_EXECUTION:
+        text = (
+            f"Баланс *{balance}₽* ниже лимита *{constants.BALANCE_LIMIT_EXECUTION}₽*, "
+            "выплата не выполнена."
+        )
+        await callback.message.answer(
+            text=StringConverter.escape_markdown_v2(text),
+            parse_mode="MarkdownV2"
+        )
+        await state.set_state(States.waiting_for_phone_number)
+        return
+
+    order_number = await superbanking.get_next_order_number(redis_client=redis_client)
+    payment_status_code, _ = await asyncio.to_thread(
+        superbanking.post_create_and_sign_payment,
+        phone=phone_formated,
+        bank_identifier=bank_id,
+        amount=amount,
+        order_number=order_number,
+    )
     
-    if response_payment_status_code_and_order_number_tuple[0] != 200:
+    if payment_status_code != 200:
         text = (
             f"У нас возникли некоторые проблемы при выплате , можете , пожалуйста , заново ввести номер телефона"
         )
@@ -121,7 +150,7 @@ async def confirm_payment(
         return 
 
     text = (
-        f"Выплата *{response_payment_status_code_and_order_number_tuple[1]}*:\n\nТелефон: {phone_number}\nБанк: {bank}\nСумма: {amount}\n\n"
+        f"Выплата *{order_number}*:\n\nТелефон: {phone_number}\nБанк: {bank}\nСумма: {amount}\n\n"
         "произведена *успешно* давайте оформим следующую.\n\n"
         "Напишите номер телефона"
     )
@@ -135,11 +164,22 @@ async def confirm_payment(
 
     await asyncio.sleep(constants.TIME_SLEEP)
     
-    logger.info(f"orderNumber = {response_payment_status_code_and_order_number_tuple[1]}")
+    logger.info(f"orderNumber = {order_number}")
     
-    check_photo_url = superbanking.post_confirm_operation(
-        order_number=response_payment_status_code_and_order_number_tuple[1]
+    check_photo_url = await asyncio.to_thread(
+        superbanking.post_confirm_operation,
+        order_number=order_number,
     )
+    if check_photo_url[0] != 200 or check_photo_url[1] == "none":
+        text = (
+            f"Выплата *{order_number}* выполнена, но не удалось получить чек."
+        )
+        await callback.message.answer(
+            text=StringConverter.escape_markdown_v2(text),
+            parse_mode="MarkdownV2",
+            reply_to_message_id=msg.message_id
+        )
+        return
     # text = (
     #     f"Чек по операции *{response_payment_status_code_and_order_number_tuple[1]}*:\n {check_photo_url[1]}\n"
     # )
@@ -156,7 +196,7 @@ async def confirm_payment(
         filename="Чек.pdf"  # Укажите имя, с которым файл отобразится у юзера
     )
     text = (
-        f"Чек *{response_payment_status_code_and_order_number_tuple[1]}*"
+        f"Чек *{order_number}*"
     )
     # Отправляем документ
     await callback.message.answer_document(

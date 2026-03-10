@@ -44,7 +44,8 @@ async def main():
     # добавляем глобальные данные - чтобы все хэндлеры видели их
     dp.workflow_data.update(
         {
-            "superbanking": superbanking
+            "superbanking": superbanking,
+            "redis_client": redis_client,
         }
     )
     # clients routers

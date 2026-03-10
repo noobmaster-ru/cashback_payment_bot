@@ -1,11 +1,12 @@
+import logging
 import uuid
-import logging 
-import requests
-from src.core.config import settings, constants
-from src.tools.string_converter import StringConverter
-from typing import Optional, Dict, Tuple
+from typing import Dict, Optional, Tuple
 
-from src.core.config import constants
+import requests
+from redis.asyncio import Redis
+
+from src.core.config import constants, settings
+from src.tools.string_converter import StringConverter
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +17,24 @@ class Superbanking:
         self.cabinet_id = settings.SUPERBANKING_CABINET_ID
         self.project_id = settings.SUPERBANKING_PROJECT_ID
         self.clearing_center_id = settings.SUPERBANKING_CLEARING_CENTER_ID
-        self.pay_number = constants.pay_number
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
-        self.order_number = None
-        
-    def post_api_balance(self) -> Tuple[int]:
+
+    def _pay_number_redis_key(self) -> str:
+        return (
+            f"{constants.PAY_NUMBER_REDIS_KEY_PREFIX}:"
+            f"{self.cabinet_id}:{self.project_id}:{self.clearing_center_id}"
+        )
+
+    async def get_next_order_number(self, redis_client: Redis) -> str:
+        key = self._pay_number_redis_key()
+        await redis_client.setnx(key, constants.PAY_NUMBER_START - 1)
+        # Гарантируем бесконечный TTL даже если ключ раньше был создан с expire.
+        await redis_client.persist(key)
+        pay_number = await redis_client.incr(key)
+        return f"{constants.order_number_hash}-{pay_number}"
+
+    def post_api_balance(self) -> int:
         headers = {
             "x-token-user-api": self.api_key,
             "Content-Type": "application/json"
@@ -31,6 +44,7 @@ class Superbanking:
             "projectId": self.project_id,
             "clearingCenterId": self.clearing_center_id
         } 
+        response = None
         try:
             response = requests.post(constants.url_api_balance, json=payload, headers=headers)
             response.raise_for_status()            
@@ -40,7 +54,10 @@ class Superbanking:
             return balance
         except requests.exceptions.HTTPError as http_err:
             logger.error("HTTP error, balance: %s", http_err)
-            logger.error("body error, balance: %s", response.text)
+            logger.error(
+                "body error, balance: %s",
+                response.text if response is not None else "no-response",
+            )
             return -1
         except Exception as err:
             logger.error("error, balance: %s", err)   
@@ -176,7 +193,8 @@ class Superbanking:
         self,
         phone: str,
         bank_identifier: str,  
-        amount: int
+        amount: int,
+        order_number: str,
     ) -> Tuple[int, str]:
         uid_token = str(uuid.uuid4())
         headers = {
@@ -184,8 +202,6 @@ class Superbanking:
             "x-idempotency-token": uid_token, # Генерация уникального ключа идемпотентности
             "Content-Type": "application/json"
         }
-        order_number =f"{constants.order_number_hash}-{self.pay_number}"
-        self.order_number = order_number
         payload = {
             "cabinetId": self.cabinet_id,
             "projectId": self.project_id,
@@ -196,36 +212,49 @@ class Superbanking:
             "purposePayment": "выплата кэшбека",
             "comment": "выплата кэшбека"
         }
-        self.pay_number += 1
+
+        create_response = None
         try:
-            response = requests.post(constants.url_create, json=payload, headers=headers)
-            response.raise_for_status()            
-            resp_json = response.json()
+            create_response = requests.post(constants.url_create, json=payload, headers=headers)
+            create_response.raise_for_status()
+            resp_json = create_response.json()
             payment_id = resp_json["data"]["payout"]["id"]
-            headers = {
-                "x-token-user-api": self.api_key,
-                "x-idempotency-token": uid_token, # Генерация уникального ключа идемпотентности
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "cabinetId": self.cabinet_id,
-                "cabinetTransactionId": payment_id,
-            }
-            try:
-                response = requests.post(constants.url_sign, json=payload, headers=headers)
-                response.raise_for_status()
-                return response.status_code, order_number
-            except requests.exceptions.HTTPError as http_err:
-                logger.error("HTTP error, sign: %s", http_err)
-                logger.error("error.text, sign: %s", response.text)
-            except Exception as err:
-                logger.error("Произошла ошибка, sign: %s", err)
         except requests.exceptions.HTTPError as http_err:
             logger.error("HTTP error, create: %s", http_err)
-            logger.error("error.text, create: %s", response.text)
+            logger.error(
+                "error.text, create: %s",
+                create_response.text if create_response is not None else "no-response",
+            )
+            if create_response is None:
+                return 500, order_number
+            return create_response.status_code, order_number
         except Exception as err:
-            logger.error(err)   
-        return response.status_code, order_number
+            logger.error(err)
+            return 500, order_number
+
+        sign_headers = {
+            "x-token-user-api": self.api_key,
+            "x-idempotency-token": uid_token, # Генерация уникального ключа идемпотентности
+            "Content-Type": "application/json"
+        }
+        sign_payload = {
+            "cabinetId": self.cabinet_id,
+            "cabinetTransactionId": payment_id,
+        }
+        sign_response = None
+        try:
+            sign_response = requests.post(constants.url_sign, json=sign_payload, headers=sign_headers)
+            sign_response.raise_for_status()
+            return sign_response.status_code, order_number
+        except requests.exceptions.HTTPError as http_err:
+            logger.error("HTTP error, sign: %s", http_err)
+            logger.error(
+                "error.text, sign: %s",
+                sign_response.text if sign_response is not None else "no-response",
+            )
+        except Exception as err:
+            logger.error("Произошла ошибка, sign: %s", err)
+        return 500 if sign_response is None else sign_response.status_code, order_number
 
     def post_confirm_operation(self, order_number: str):
         headers = {
@@ -236,6 +265,7 @@ class Superbanking:
             "cabinetId": self.cabinet_id,
             "orderNumber": order_number, # EsLabCashBot
         }
+        response = None
         try:
             response = requests.post(constants.url_confirm_operation, json=payload, headers=headers)
             response.raise_for_status()            
@@ -244,7 +274,10 @@ class Superbanking:
             return response.status_code, check_photo_url
         except requests.exceptions.HTTPError as http_err:
             logger.error("HTTP error, confirm_payment: %s", http_err)
-            logger.error("error.text, confirm_payment: %s", response.text)
+            logger.error(
+                "error.text, confirm_payment: %s",
+                response.text if response is not None else "no-response",
+            )
         except Exception as err:
             logger.error(err)   
-        return response.status_code, "none"
+        return 500 if response is None else response.status_code, "none"

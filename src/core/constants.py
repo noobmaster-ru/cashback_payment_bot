@@ -1,14 +1,18 @@
-from typing import  List, Dict
+from typing import List, Dict
 
 TIME_SLEEP = 10
-pay_number = 755
-admins_ids = [6670414946, 694144143,547299317]
-url_create="https://api.superbanking.ru/cabinet/payout/create?v=1.0.0"
-url_sign="https://api.superbanking.ru/cabinet/payout/sign?v=1.0.1"
-url_api_balance="https://api.superbanking.ru/cabinet/clearingCenter/getApiBalance?v=1.0.0"
-url_confirm_operation="https://api.superbanking.ru/cabinet/confirmOperation/createOne?v=1.0.0"
+PAY_NUMBER_START = 1320
+PAY_NUMBER_REDIS_KEY_PREFIX = "cashback_payment:pay_number"
+BALANCE_LIMIT_EXECUTION = 5000
+admins_ids = [6670414946, 694144143, 547299317]
+url_create = "https://api.superbanking.ru/cabinet/payout/create?v=1.0.0"
+url_sign = "https://api.superbanking.ru/cabinet/payout/sign?v=1.0.1"
+url_api_balance = "https://api.superbanking.ru/cabinet/clearingCenter/getApiBalance?v=1.0.0"
+url_confirm_operation = "https://api.superbanking.ru/cabinet/confirmOperation/createOne?v=1.0.0"
 
-order_number_hash="EsLab"
+order_number_hash = "EsLab"
+# backward compatibility: keep legacy constant name
+pay_number = PAY_NUMBER_START
 # REGULAR EXPRESSIONS
 # 16 numbers or 4 for blocks with 4 numbers with hyphen
 card_pattern = r"\b(?:\d{16}|\d{4}(?:[ -]\d{4}){3})\b"
