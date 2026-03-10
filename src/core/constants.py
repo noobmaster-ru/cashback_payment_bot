@@ -1,7 +1,7 @@
 from typing import List, Dict
 
 TIME_SLEEP = 10
-PAY_NUMBER_START = 1321
+PAY_NUMBER_START = 1324
 PAY_NUMBER_REDIS_KEY_PREFIX = "cashback_payment:pay_number"
 BALANCE_LIMIT_EXECUTION = 5000
 admins_ids = [6670414946, 694144143, 547299317]
