@@ -59,9 +59,19 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_USERNAME != '' && secrets.DEPLOY_SSH_KEY != '' && secrets.DEPLOY_PATH != '' }}
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USERNAME: ${{ secrets.DEPLOY_USERNAME }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
     steps:
+      - name: Skip deploy if secrets are not configured
+        if: ${{ env.DEPLOY_HOST == '' || env.DEPLOY_USERNAME == '' || env.DEPLOY_SSH_KEY == '' || env.DEPLOY_PATH == '' }}
+        run: echo "Deploy skipped: required deploy secrets are missing."
+
       - name: Deploy over SSH
+        if: ${{ env.DEPLOY_HOST != '' && env.DEPLOY_USERNAME != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_PATH != '' }}
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
