@@ -1,7 +1,11 @@
 name: CD
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - main
   workflow_dispatch:
@@ -12,6 +16,7 @@ env:
 
 jobs:
   build-and-push:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -59,25 +64,13 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    env:
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      DEPLOY_USERNAME: ${{ secrets.DEPLOY_USERNAME }}
-      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
     steps:
-      - name: Skip deploy if secrets are not configured
-        if: ${{ env.DEPLOY_HOST == '' || env.DEPLOY_USERNAME == '' || env.DEPLOY_SSH_KEY == '' || env.DEPLOY_PATH == '' }}
-        run: echo "Deploy skipped: required deploy secrets are missing."
-
       - name: Deploy over SSH
-        if: ${{ env.DEPLOY_HOST != '' && env.DEPLOY_USERNAME != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_PATH != '' }}
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USERNAME }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT || '22' }}
           script: |
             cd "${{ secrets.DEPLOY_PATH }}"
             export CASHBACK_BOT_IMAGE="${{ needs.build-and-push.outputs.image_ref }}"
