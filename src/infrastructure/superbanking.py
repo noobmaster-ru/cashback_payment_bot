@@ -34,7 +34,7 @@ class Superbanking:
         pay_number = await redis_client.incr(key)
         return f"{constants.order_number_hash}-{pay_number}"
 
-    def post_api_balance(self) -> int:
+    def post_api_balance(self) -> float:
         headers = {
             "x-token-user-api": self.api_key,
             "Content-Type": "application/json"
@@ -49,9 +49,15 @@ class Superbanking:
             response = requests.post(constants.url_api_balance, json=payload, headers=headers)
             response.raise_for_status()            
             resp_json = response.json()
-            balance = resp_json["data"]["balance"]
+            raw_balance = resp_json["data"]["balance"]
+            if isinstance(raw_balance, str):
+                raw_balance = raw_balance.replace(",", ".")
+            balance = float(raw_balance)
             logger.info(f"balance = {balance}₽")
             return balance
+        except (TypeError, ValueError) as parse_err:
+            logger.error("balance parse error: %s", parse_err)
+            return -1
         except requests.exceptions.HTTPError as http_err:
             logger.error("HTTP error, balance: %s", http_err)
             logger.error(
