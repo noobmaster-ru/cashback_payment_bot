@@ -19,6 +19,11 @@ class Superbanking:
         self.clearing_center_id = settings.SUPERBANKING_CLEARING_CENTER_ID
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
+        self.proxies = {
+            'http': 'http://77.232.136.82:8888', # сервер AxiomAi как прокси используем для Superbanking
+            'https': 'http://77.232.136.82:8888',
+        }
+
 
     def _pay_number_redis_key(self) -> str:
         return (
@@ -46,7 +51,13 @@ class Superbanking:
         } 
         response = None
         try:
-            response = requests.post(constants.url_api_balance, json=payload, headers=headers)
+            response = requests.post(
+                constants.url_api_balance, 
+                json=payload, 
+                headers=headers,
+                proxies=self.proxies,
+                timeout=10
+            )
             response.raise_for_status()            
             resp_json = response.json()
             raw_balance = resp_json["data"]["balance"]
@@ -221,7 +232,13 @@ class Superbanking:
 
         create_response = None
         try:
-            create_response = requests.post(constants.url_create, json=payload, headers=headers)
+            create_response = requests.post(
+                constants.url_create, 
+                json=payload, 
+                headers=headers,
+                proxies=self.proxies,
+                timeout=10
+            )
             create_response.raise_for_status()
             resp_json = create_response.json()
             payment_id = resp_json["data"]["payout"]["id"]
@@ -249,7 +266,13 @@ class Superbanking:
         }
         sign_response = None
         try:
-            sign_response = requests.post(constants.url_sign, json=sign_payload, headers=sign_headers)
+            sign_response = requests.post(
+                constants.url_sign, 
+                json=sign_payload, 
+                headers=sign_headers,
+                proxies=self.proxies,
+                timeout=10
+            )
             sign_response.raise_for_status()
             return sign_response.status_code, order_number
         except requests.exceptions.HTTPError as http_err:
@@ -273,7 +296,13 @@ class Superbanking:
         }
         response = None
         try:
-            response = requests.post(constants.url_confirm_operation, json=payload, headers=headers)
+            response = requests.post(
+                constants.url_confirm_operation, 
+                json=payload,
+                headers=headers,
+                proxies=self.proxies,
+                timeout=10
+            )
             response.raise_for_status()            
             resp_json = response.json()
             check_photo_url = resp_json["data"]["url"]
