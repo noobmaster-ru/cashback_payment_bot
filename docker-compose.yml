@@ -1,5 +1,13 @@
 # prod: cashback_bot
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: cashback_redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    restart: always
+
   cashback_bot:
     build: .
     image: ${CASHBACK_BOT_IMAGE:-cashback_bot:local}
@@ -7,6 +15,13 @@ services:
     command: ["/app/.venv/bin/python", "run.py"]
     env_file:
       - .env        
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
     volumes:
       - ./logs:/app/logs
     restart: always
+
+volumes:
+  redis_data:

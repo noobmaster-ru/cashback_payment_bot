@@ -22,9 +22,27 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+async def wait_for_redis(redis_client, attempts: int = 10, delay: float = 1.0) -> None:
+    for attempt in range(1, attempts + 1):
+        try:
+            await redis_client.ping()
+            logger.info("Redis connection established")
+            return
+        except Exception as err:
+            if attempt == attempts:
+                raise RuntimeError("Redis is unavailable") from err
+            logger.warning(
+                "Redis is unavailable, retrying %s/%s: %s",
+                attempt,
+                attempts,
+                err,
+            )
+            await asyncio.sleep(delay)
+
 async def main():
     # Один Redis-клиент, одна DB (например /0)
     redis_client = await asyncredis.from_url(settings.REDIS_URL)
+    await wait_for_redis(redis_client)
     
     superbanking = Superbanking()
     superbanking.create_banks_ids()

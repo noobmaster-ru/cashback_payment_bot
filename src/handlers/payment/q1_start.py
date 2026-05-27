@@ -24,9 +24,8 @@ async def get_balance(
         text=StringConverter.escape_markdown_v2(text),
         parse_mode="MarkdownV2"
     )
-    
-@router.message(StateFilter(None))
-async def cmd_start(
+
+async def start_payment_dialog(
     message: Message,
     state: FSMContext
 ):
@@ -40,7 +39,7 @@ async def cmd_start(
             parse_mode="MarkdownV2"
         )
         return
-    
+
     username = message.from_user.username or "-"
     full_name = message.from_user.full_name or "-"
     msg_text = message.text or "-"
@@ -64,3 +63,18 @@ async def cmd_start(
     )
 
     await state.set_state(States.waiting_for_phone_number)
+
+@router.message(Command("start", "restart", "cancel"))
+async def restart_dialog(
+    message: Message,
+    state: FSMContext
+):
+    await state.clear()
+    await start_payment_dialog(message=message, state=state)
+
+@router.message(StateFilter(None))
+async def cmd_start(
+    message: Message,
+    state: FSMContext
+):
+    await start_payment_dialog(message=message, state=state)

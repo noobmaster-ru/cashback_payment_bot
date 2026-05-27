@@ -2,7 +2,7 @@ import logging
 import asyncio
 
 from aiogram import F
-from aiogram.types import CallbackQuery, URLInputFile
+from aiogram.types import CallbackQuery, Message, URLInputFile
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from redis.asyncio import Redis
@@ -205,3 +205,58 @@ async def confirm_payment(
         parse_mode="MarkdownV2",
         reply_to_message_id=msg.message_id # Если нужно ответить на текущее сообщение
     )
+
+@router.callback_query(F.data.in_({"confirm_payment", "no_confirm_payment"}))
+async def stale_payment_callback(
+    callback: CallbackQuery,
+    state: FSMContext,
+):
+    telegram_id = callback.from_user.id
+    if telegram_id not in constants.admins_ids:
+        await callback.answer()
+        return
+
+    await callback.answer("Диалог устарел, начните заново")
+    await state.clear()
+
+    if not isinstance(callback.message, Message):
+        return
+
+    text = (
+        "Диалог был сброшен. "
+        "Отправьте номер телефона/карты, чтобы начать выплату заново."
+    )
+    await callback.message.answer(
+        text=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2",
+    )
+    await state.set_state(States.waiting_for_phone_number)
+
+@router.message()
+async def unexpected_message(
+    message: Message,
+    state: FSMContext,
+):
+    telegram_id = message.from_user.id
+    if telegram_id not in constants.admins_ids:
+        return
+
+    current_state = await state.get_state()
+    if current_state == States.confirming_requisites.state:
+        text = "Нажмите кнопку Да/Нет под реквизитами или отправьте /restart."
+        await message.answer(
+            text=StringConverter.escape_markdown_v2(text),
+            parse_mode="MarkdownV2",
+        )
+        return
+
+    await state.clear()
+    text = (
+        "Диалог был сброшен. "
+        "Отправьте номер телефона/карты, чтобы начать выплату заново."
+    )
+    await message.answer(
+        text=StringConverter.escape_markdown_v2(text),
+        parse_mode="MarkdownV2",
+    )
+    await state.set_state(States.waiting_for_phone_number)

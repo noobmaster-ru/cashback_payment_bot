@@ -12,6 +12,9 @@ Required variables:
 - `SUPERBANKING_CLEARING_CENTER_ID`
 - `REDIS_URL`
 
+For Docker Compose deployments Redis is started as the `redis` service, and the
+bot container uses `redis://redis:6379/0`.
+
 ## Payout safety
 
 - Before each payout, bot requests `post_api_balance`.
@@ -24,6 +27,7 @@ Required variables:
 `cashback_payment:pay_number:<cabinet_id>:<project_id>:<clearing_center_id>`
 
 This prevents counter reset after process restart and keeps sequence unique per account.
+Docker Compose stores Redis data in the `redis_data` volume.
 
 ## CI/CD
 
