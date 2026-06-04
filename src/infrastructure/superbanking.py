@@ -134,6 +134,12 @@ class Superbanking:
         Superbanking._add_alias(self, alias="т- банк", by_eng="TINKOFF")
         Superbanking._add_alias(self, alias="т -банк", by_eng="TINKOFF")
         
+        Superbanking._add_alias(self, alias="Банк Зенит", by_eng="BANK ZENIT")
+        Superbanking._add_alias(self, alias="Банк зенит", by_eng="BANK ZENIT")
+        Superbanking._add_alias(self, alias="Зенит", by_eng="BANK ZENIT")
+        Superbanking._add_alias(self, alias="зенит", by_eng="BANK ZENIT")
+        Superbanking._add_alias(self, alias="банк зенит", by_eng="BANK ZENIT")
+        
         Superbanking._add_alias(self, alias="Альфа", by_rus="Альфа Банк")
         Superbanking._add_alias(self, alias="Альфабанк", by_rus="Альфа Банк")
         Superbanking._add_alias(self, alias="Альфа-банк", by_rus="Альфа Банк")
