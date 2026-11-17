@@ -10,6 +10,7 @@ test_*
 .git/
 .gitignore
 .env.dist
+.env
 .DS_Store
 
 .idea/

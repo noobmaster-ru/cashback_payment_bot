@@ -20,10 +20,8 @@ class Superbanking:
         self.clearing_center_id = settings.SUPERBANKING_CLEARING_CENTER_ID
         self.ALIAS_MAP: Dict[str, str] = {}
         self.BANK_IDENTIFIERS: Dict[str, str] = {}
-        self.proxies = {
-            'http': 'http://77.232.136.82:8888', # сервер AxiomAi как прокси используем для Superbanking
-            'https': 'http://77.232.136.82:8888',
-        }
+        proxy_url = settings.SUPERBANKING_PROXY_URL
+        self.proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else {}
 
 
     def _pay_number_redis_key(self) -> str:

@@ -9,6 +9,7 @@ class EnvSettings(BaseSettings):
     SUPERBANKING_CABINET_ID: str
     SUPERBANKING_PROJECT_ID: str
     SUPERBANKING_CLEARING_CENTER_ID: str
+    SUPERBANKING_PROXY_URL: str | None = None
 
     # Redis
     REDIS_URL: str
