@@ -3,7 +3,7 @@ from typing import List, Dict
 TIME_SLEEP = 10
 PAY_NUMBER_START = 2000
 PAY_NUMBER_REDIS_KEY_PREFIX = "cashback_payment:pay_number"
-BALANCE_LIMIT_EXECUTION = 500
+BALANCE_LIMIT_EXECUTION = 0
 admins_ids = [6670414946, 694144143, 547299317]
 url_create = "https://api.superbanking.ru/cabinet/payout/create?v=1.0.0"
 url_sign = "https://api.superbanking.ru/cabinet/payout/sign?v=1.0.1"
