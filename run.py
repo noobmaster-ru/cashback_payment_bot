@@ -3,6 +3,8 @@ import logging
 import redis.asyncio as asyncredis
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.exceptions import TelegramNetworkError
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 
 from src.handlers.payment import router as text_router
@@ -21,6 +23,18 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+async def wait_for_telegram(bot: Bot, attempts: int = 5) -> None:
+    for attempt in range(1, attempts + 1):
+        try:
+            me = await bot.me()
+            logger.info("Telegram connection established for @%s", me.username)
+            return
+        except TelegramNetworkError:
+            if attempt == attempts:
+                raise
+            logger.warning("Telegram startup request failed, retrying (%s/%s)", attempt, attempts)
+            await asyncio.sleep(2)
 
 async def wait_for_redis(redis_client, attempts: int = 10, delay: float = 1.0) -> None:
     for attempt in range(1, attempts + 1):
@@ -54,7 +68,7 @@ async def main():
         ),
     ) 
     # ============ START =============
-    bot = Bot(token=settings.BOT_TOKEN)
+    bot = Bot(token=settings.BOT_TOKEN, session=AiohttpSession(timeout=15))
     dp = Dispatcher(storage=storage)
 
 
@@ -68,7 +82,11 @@ async def main():
     )
     # clients routers
     dp.include_routers(text_router) 
-    await dp.start_polling(bot)
+    try:
+        await wait_for_telegram(bot)
+        await dp.start_polling(bot, close_bot_session=False)
+    finally:
+        await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
